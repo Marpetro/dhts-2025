@@ -1,4 +1,6 @@
 from src.pastry.local_index import LocalIndex, MovieRecord
+from .network import PastryNetwork
+
 
 idx = LocalIndex()
 idx.upsert(MovieRecord(movie_id="1", title="A", popularity=10.0, vote_average=7.2, runtime=120))
