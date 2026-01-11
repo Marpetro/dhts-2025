@@ -1,20 +1,19 @@
 from __future__ import annotations
-
-from dataclasses import dataclass
-from typing import Dict, List, Any, Optional
-
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any
 
 @dataclass
 class ChordNode:
-    node_id: str
-    m_bits: int = 128
+    node_id: int
+    m: int = 128
+
+    successor: Optional[int] = None
+    predecessor: Optional[int] = None
+
+    # finger[i] = successor of (node_id + 2^i)
+    finger: List[int] = field(default_factory=list)
+
+    store: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        self.store: Dict[str, Any] = {}
-        self.predecessor: Optional[str] = None
-        self.successor: Optional[str] = None
-        # finger table: list of node ids
-        self.fingers: List[Optional[str]] = [None] * (self.m_bits // 4 * 1)  # placeholder size; will be set by network
-
-    def __repr__(self) -> str:  # useful for debugging
-        return f"ChordNode({self.node_id})"
+        self.finger = [self.node_id for _ in range(self.m)]
