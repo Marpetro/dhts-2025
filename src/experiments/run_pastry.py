@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+import os
 
 import random
 from typing import List, Dict, Any, Tuple
@@ -71,7 +72,9 @@ def run_k_title_query(
             continue
 
         # local filtering using index (optional)
-        node = net.nodes[net.lookup(key_id).responsible_node_id]
+        # `lookup` returns (responsible_node_id, hops)
+        resp_id, _ = net.lookup(key_id)
+        node = net.nodes[resp_id]
         if popularity_filter is not None:
             lo, hi = popularity_filter
             _filtered = node.local_index.range_query("popularity", lo, hi)
@@ -82,12 +85,17 @@ def run_k_title_query(
 
 
 def main() -> None:
-    # Experiment knobs
-    N_NODES = [50, 100, 200]
-    N_KEYS = [2000]          # dummy dataset size for now
-    K_TITLES = 200           # number of title lookups per trial
-    TRIALS = 3
-    SEED = 7
+    # Experiment knobs (can be overridden by environment variables for smoke tests)
+    # Example: N_NODES='5' N_KEYS='50' K_TITLES='10' TRIALS='1'
+    def _parse_list_env(name: str, default: str) -> list[int]:
+        raw = os.getenv(name, default)
+        return [int(x) for x in str(raw).split(",") if str(x).strip()]
+
+    N_NODES = _parse_list_env("N_NODES", "50,100,200")
+    N_KEYS = _parse_list_env("N_KEYS", "2000")
+    K_TITLES = int(os.getenv("K_TITLES", "200"))
+    TRIALS = int(os.getenv("TRIALS", "3"))
+    SEED = int(os.getenv("SEED", "7"))
 
     project_root = Path(__file__).resolve().parents[2]  # DHTS-2025
     results_dir = project_root / "results"
