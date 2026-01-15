@@ -189,53 +189,53 @@ class PastryNetwork:
         node.store.pop(key_str, None)
         return existed, res.hops
 
-def join_node(self, new_node_id: str, bootstrap_node_id: Optional[str] = None) -> int:
-    """
-    Εισαγωγή νέου κόμβου στο δίκτυο. 
-    Επιστρέφει τον αριθμό των hops που απαιτήθηκαν για το join.
-    """
-    if new_node_id in self.nodes:
-        return 0
-    
-    new_node = Node(node_id=new_node_id, leaf_half=self.leaf_half)
-    self.nodes[new_node_id] = new_node
-    
-    if not bootstrap_node_id or len(self.nodes) == 1:
-        # Ο πρώτος κόμβος ή αν δεν υπάρχει bootstrap, ενημερώνουμε στατικά
-        self._recompute_all_leaf_sets(sorted(self.nodes.keys(), key=lambda x: int(x, 16)))
-        return 0
+    def join_node(self, new_node_id: str, bootstrap_node_id: Optional[str] = None) -> int:
+        """
+        Εισαγωγή νέου κόμβου στο δίκτυο. 
+        Επιστρέφει τον αριθμό των hops που απαιτήθηκαν για το join.
+        """
+        if new_node_id in self.nodes:
+            return 0
+        
+        new_node = Node(node_id=new_node_id, leaf_half=self.leaf_half)
+        self.nodes[new_node_id] = new_node
+        
+        if not bootstrap_node_id or len(self.nodes) == 1:
+            # Ο πρώτος κόμβος ή αν δεν υπάρχει bootstrap, ενημερώνουμε στατικά
+            self._recompute_all_leaf_sets(sorted(self.nodes.keys(), key=lambda x: int(x, 16)))
+            return 0
 
-    # Προσομοίωση του Join Protocol:
-    # 1. Routing προς το ID του νέου κόμβου
-    res = self.lookup(new_node_id, start_node_id=bootstrap_node_id)
-    
-    # 2. Ενημέρωση Routing Table & Leaf Set (Simulation of data exchange)
-    # Στην πραγματικότητα ο νέος κόμβος παίρνει στοιχεία από κάθε hop.
-    # Εδώ ανανεώνουμε τη δομή για να αντικατοπτρίζει τη νέα κατάσταση.
-    all_ids = sorted(self.nodes.keys(), key=lambda x: int(x, 16))
-    self._recompute_all_leaf_sets(all_ids)
-    self._recompute_all_routing_tables(all_ids)
-    
-    return res.hops
+        # Προσομοίωση του Join Protocol:
+        # 1. Routing προς το ID του νέου κόμβου
+        res = self.lookup(new_node_id, start_node_id=bootstrap_node_id)
+        
+        # 2. Ενημέρωση Routing Table & Leaf Set (Simulation of data exchange)
+        # Στην πραγματικότητα ο νέος κόμβος παίρνει στοιχεία από κάθε hop.
+        # Εδώ ανανεώνουμε τη δομή για να αντικατοπτρίζει τη νέα κατάσταση.
+        all_ids = sorted(self.nodes.keys(), key=lambda x: int(x, 16))
+        self._recompute_all_leaf_sets(all_ids)
+        self._recompute_all_routing_tables(all_ids)
+        
+        return res.hops
 
-def leave_node(self, node_id: str):
-    """
-    Αφαίρεση κόμβου και ανακατανομή των δεδομένων του (προαιρετικά).
-    """
-    if node_id not in self.nodes:
-        return
-    
-    # Μεταφορά δεδομένων στους γείτονες (απαραίτητο για DHT consistency)
-    node_to_leave = self.nodes[node_id]
-    all_ids = sorted(self.nodes.keys(), key=lambda x: int(x, 16))
-    idx = all_ids.index(node_id)
-    
-    # Ο κοντινότερος γείτονας αναλαμβάνει τα κλειδιά
-    neighbor_id = all_ids[idx-1] if idx > 0 else all_ids[idx+1]
-    self.nodes[neighbor_id].store.update(node_to_leave.store)
-    
-    # Αφαίρεση και αναδιοργάνωση
-    del self.nodes[node_id]
-    new_ids = sorted(self.nodes.keys(), key=lambda x: int(x, 16))
-    self._recompute_all_leaf_sets(new_ids)
-    self._recompute_all_routing_tables(new_ids)
+    def leave_node(self, node_id: str):
+        """
+        Αφαίρεση κόμβου και ανακατανομή των δεδομένων του (προαιρετικά).
+        """
+        if node_id not in self.nodes:
+            return
+        
+        # Μεταφορά δεδομένων στους γείτονες (απαραίτητο για DHT consistency)
+        node_to_leave = self.nodes[node_id]
+        all_ids = sorted(self.nodes.keys(), key=lambda x: int(x, 16))
+        idx = all_ids.index(node_id)
+        
+        # Ο κοντινότερος γείτονας αναλαμβάνει τα κλειδιά
+        neighbor_id = all_ids[idx-1] if idx > 0 else all_ids[idx+1]
+        self.nodes[neighbor_id].store.update(node_to_leave.store)
+        
+        # Αφαίρεση και αναδιοργάνωση
+        del self.nodes[node_id]
+        new_ids = sorted(self.nodes.keys(), key=lambda x: int(x, 16))
+        self._recompute_all_leaf_sets(new_ids)
+        self._recompute_all_routing_tables(new_ids)

@@ -1,0 +1,8 @@
+{
+    "PASTRY_Insert_Hops": 1.7924528301886793,
+    "PASTRY_Lookup_Hops": 1.83,
+    "PASTRY_Success": 100,
+    "CHORD_Insert_Hops": 4.150943396226415,
+    "CHORD_Lookup_Hops": 4.14,
+    "CHORD_Success": 100
+}

@@ -109,3 +109,15 @@ class ChordNetwork:
         if node_id in self.nodes:
             val = self.nodes[node_id].store.get(key_str)
         return val, hops
+
+    def delete(self, key_id: str, key_str: str) -> Tuple[bool, int]:
+        """
+        Βρίσκει τον υπεύθυνο κόμβο και διαγράφει την τιμή.
+        Επιστρέφει (existed, hops).
+        """
+        node_id, hops = self.lookup(key_id)
+        existed = False
+        if node_id in self.nodes:
+            existed = key_str in self.nodes[node_id].store
+            self.nodes[node_id].store.pop(key_str, None)
+        return existed, hops

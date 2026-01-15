@@ -131,7 +131,7 @@ def run_full_experiment():
         # C. Delete Hops
         hops_del = 0
         for m in sample:
-            res = net_c.lookup(key_id_hex_from_title(m.title))
+            res = net_c.delete(key_id_hex_from_title(m.title), normalize_title(m.title))
             h = res[1] if isinstance(res, tuple) else res
             hops_del += h
         results['chord']['delete'].append(hops_del / len(sample))
@@ -168,9 +168,13 @@ def create_plots(x_values, data):
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     
+    # Create results directory if it doesn't exist
+    import os
+    os.makedirs("results", exist_ok=True)
+    
     out_path = "results/final_comparison_all_ops.png"
     plt.savefig(out_path, dpi=300)
-    print(f"\n✅ Το γράφημα με ΟΛΕΣ τις λειτουργίες αποθηκεύτηκε: {out_path}")
+    print(f"\n[OK] Plot saved to: {out_path}")
     plt.show()
 
 if __name__ == "__main__":
