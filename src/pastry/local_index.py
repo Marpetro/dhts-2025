@@ -12,9 +12,21 @@ class MovieRecord:
     """
     movie_id: str
     title: str
+    adult: Optional[bool] = None
+    original_language: Optional[str] = None
+    original_country: Optional[List[str]] = None
+    release_date: Optional[str] = None
+
+    genre_names: Optional[List[str]] = None
+    production_company_names: Optional[List[str]] = None
+
+    budget: Optional[float] = None
+    revenue: Optional[float] = None
+
     popularity: Optional[float] = None
     vote_average: Optional[float] = None
     runtime: Optional[int] = None
+    vote_count: Optional[int] = None
     # ... πρόσθεσε ό,τι άλλο θες
 
 
@@ -77,10 +89,14 @@ class LocalIndex:
     """
     def __init__(self) -> None:
         self.records: Dict[str, MovieRecord] = {}
+        self.by_title: Dict[str, List[str]] = {}
         self.indexes: Dict[str, SortedIndex] = {
             "popularity": SortedIndex(),
             "vote_average": SortedIndex(),
             "runtime": SortedIndex(),
+            "vote_count": SortedIndex(),
+            "budget": SortedIndex(),
+            "revenue": SortedIndex(),
         }
 
     def upsert(self, rec: MovieRecord) -> None:
@@ -89,6 +105,10 @@ class LocalIndex:
         self.indexes["vote_average"].add_or_update(rec.movie_id, rec.vote_average)
         # runtime is int but stored as float in index for simplicity
         self.indexes["runtime"].add_or_update(rec.movie_id, float(rec.runtime) if rec.runtime is not None else None)
+        self.indexes["vote_count"].add_or_update(
+        rec.movie_id, float(rec.vote_count) if rec.vote_count is not None else None)
+        self.indexes["budget"].add_or_update(rec.movie_id, float(rec.budget) if rec.budget is not None else None)
+        self.indexes["revenue"].add_or_update(rec.movie_id, float(rec.revenue) if rec.revenue is not None else None)
 
     def delete(self, movie_id: str) -> None:
         if movie_id not in self.records:
@@ -96,6 +116,43 @@ class LocalIndex:
         self.records.pop(movie_id, None)
         for idx in self.indexes.values():
             idx.remove(movie_id)
+def upsert_for_title(self, title: str, rec: MovieRecord) -> None:
+    """
+    Upsert record και σύνδεση του movie_id κάτω από το συγκεκριμένο title.
+    """
+    self.upsert(rec)
+
+    ids = self.by_title.setdefault(title, [])
+    if rec.movie_id not in ids:
+        ids.append(rec.movie_id)
+
+def get_by_title(self, title: str) -> List[MovieRecord]:
+    """
+    Επιστρέφει όλα τα records που ανήκουν στο συγκεκριμένο title.
+    """
+    ids = self.by_title.get(title, [])
+    return [self.records[mid] for mid in ids if mid in self.records]
+
+def delete_for_title(self, title: str, movie_id: str) -> None:
+    """
+    Σβήνει συγκεκριμένο movie_id και το αποσυνδέει από το title.
+    """
+    # remove from title list
+    if title in self.by_title:
+        self.by_title[title] = [mid for mid in self.by_title[title] if mid != movie_id]
+        if not self.by_title[title]:
+            self.by_title.pop(title, None)
+
+    # remove record + indexes
+    self.delete(movie_id)
+
+def delete_title(self, title: str) -> None:
+    """
+    Σβήνει ΟΛΑ τα records κάτω από ένα title.
+    """
+    ids = self.by_title.pop(title, [])
+    for mid in ids:
+        self.delete(mid)
 
     def range_query(self, field: str, low: float, high: float) -> List[MovieRecord]:
         if field not in self.indexes:
@@ -108,3 +165,21 @@ class LocalIndex:
             raise KeyError(f"Unknown field index: {field}")
         ids = self.indexes[field].top_k_ids(k)
         return [self.records[mid] for mid in ids if mid in self.records]
+
+def range_query_within_title(self, title: str, field: str, low: float, high: float) -> List[MovieRecord]:
+    if field not in self.indexes:
+        raise KeyError(f"Unknown field index: {field}")
+
+    ids_in_range = set(self.indexes[field].range_query_ids(low, high))
+    title_ids = self.by_title.get(title, [])
+    return [self.records[mid] for mid in title_ids if mid in ids_in_range and mid in self.records]
+
+def top_k_within_title(self, title: str, field: str, k: int) -> List[MovieRecord]:
+    if field not in self.indexes:
+        raise KeyError(f"Unknown field index: {field}")
+
+    title_set = set(self.by_title.get(title, []))
+    # πάρε παραπάνω candidates και φιλτράρισε
+    candidates = self.indexes[field].top_k_ids(max(k * 5, k))
+    out = [self.records[mid] for mid in candidates if mid in title_set and mid in self.records]
+    return out[:k]
